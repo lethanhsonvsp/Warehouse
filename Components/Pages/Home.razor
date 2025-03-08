@@ -1,0 +1,707 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject WarehouseService WarehouseService
+@inject IJSRuntime JSRuntime
+
+<div class="container my-4">
+    <h2 class="mb-4">Quản Lý Kho Hàng</h2>
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" id="warehouseTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pallet-tab" data-bs-toggle="tab" data-bs-target="#pallets" type="button" role="tab" aria-controls="pallets" aria-selected="true">Pallets</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="locations-tab" data-bs-toggle="tab" data-bs-target="#locations" type="button" role="tab" aria-controls="locations" aria-selected="false">Location</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">Pallet Location</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="robots-tab" data-bs-toggle="tab" data-bs-target="#robots" type="button" role="tab" aria-controls="robots" aria-selected="false">Robots</button>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content" id="warehouseTabContent">
+        <!-- Pallet Tab -->
+        <div class="tab-pane fade show active" id="pallets" role="tabpanel" aria-labelledby="pallet-tab">
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <h4>Danh Sách Pallet</h4>
+                <button class="btn btn-success" @onclick="OpenAddPalletModal">Thêm Pallet</button>
+            </div>
+            <table class="table table-striped mt-2">
+                <thead>
+                    <tr>
+                        <th>Pallet ID</th>
+                        <th>Trạng Thái</th>
+                        <th>Vị Trí Hiện Tại</th>
+                        <th>Robot Assigned</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pallet in pallets)
+                    {
+                        if (editPalletId == pallet.Pallet_ID)
+                        {
+                            <tr>
+                                <td>@pallet.Pallet_ID</td>
+                                <td><input class="form-control" @bind="editPallet.Status" /></td>
+                                <td>@pallet.Current_Location</td>
+                                <td>@pallet.Robot_ID</td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" @onclick="() => SavePalletEdit(pallet.Pallet_ID)">Lưu</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="CancelPalletEdit">Hủy</button>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td>@pallet.Pallet_ID</td>
+                                <td>@pallet.Status</td>
+                                <td>@pallet.Current_Location</td>
+                                <td>@pallet.Robot_ID</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm me-1" @onclick="() => OpenMoveModal(pallet.Pallet_ID)">Di Chuyển</button>
+                                    <button class="btn btn-warning btn-sm me-1" @onclick="() => StartPalletEdit(pallet.Pallet_ID)">Sửa</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeletePallet(pallet.Pallet_ID)">Xóa</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Locations Tab -->
+        <div class="tab-pane fade" id="locations" role="tabpanel" aria-labelledby="locations-tab">
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <h4>Danh Sách Vị Trí</h4>
+                <button class="btn btn-success" @onclick="OpenAddLocationModal">Thêm Vị Trí</button>
+            </div>
+            <table class="table table-striped mt-2">
+                <thead>
+                    <tr>
+                        <th>Location ID</th>
+                        <th>Tên</th>
+                        <th>Vị Trí Cha</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var location in locations)
+                    {
+                        if (editLocationId == location.Location_ID)
+                        {
+                            <tr>
+                                <td>@location.Location_ID</td>
+                                <td><input class="form-control" @bind="editLocation.Name" /></td>
+                                <td>
+                                    <select class="form-control" @bind="editLocation.Parent_Location_ID">
+                                        <option value="">Không có</option>
+                                        @foreach (var parent in locations.Where(l => l.Location_ID != editLocation.Location_ID))
+                                        {
+                                            <option value="@parent.Location_ID">@parent.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" @onclick="() => SaveLocationEdit(location.Location_ID)">Lưu</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="CancelLocationEdit">Hủy</button>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td>@location.Location_ID</td>
+                                <td>@location.Name</td>
+                                <td>@(location.Parent_Location?.Name ?? "Không có")</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm me-1" @onclick="() => StartLocationEdit(location.Location_ID)">Sửa</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeleteLocation(location.Location_ID)">Xóa</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <h4>Danh Sách Pallet_Location</h4>
+                <button class="btn btn-success" @onclick="OpenAddPalletLocationModal">Thêm Pallet_Location</button>
+            </div>
+            <table class="table table-striped mt-2">
+                <thead>
+                    <tr>
+                        <th>Pallet ID</th>
+                        <th>Time In</th>
+                        <th>Location ID</th>
+                        <th>Time Out</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pl in palletLocations)
+                    {
+                        if (editPalletLocationKey?.Pallet_ID == pl.Pallet_ID && editPalletLocationKey?.Time_In == pl.Time_In)
+                        {
+                            <tr>
+                                <td>@pl.Pallet_ID</td>
+                                <td>@editPalletLocation.Time_In.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td>
+                                    <select class="form-control" @bind="editPalletLocation.Location_ID">
+                                        @foreach (var loc in locations)
+                                        {
+                                            <option value="@loc.Location_ID">@loc.Name</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input class="form-control" type="datetime-local" @bind="editPalletLocation.Time_Out" />
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" @onclick="SavePalletLocationEdit">Lưu</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="CancelPalletLocationEdit">Hủy</button>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td>@pl.Pallet_ID</td>
+                                <td>@pl.Time_In.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td>@pl.Location?.Name</td>
+                                <td>@(pl.Time_Out?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Chưa ra")</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm me-1" @onclick="() => StartPalletLocationEdit(pl.Pallet_ID, pl.Time_In)">Sửa</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => DeletePalletLocation(pl.Pallet_ID, pl.Time_In)">Xóa</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Robots Tab -->
+        <div class="tab-pane fade" id="robots" role="tabpanel" aria-labelledby="robots-tab">
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <h4>Danh Sách Robot</h4>
+                <button class="btn btn-success" @onclick="OpenAddRobotModal">Thêm Robot</button>
+            </div>
+            <table class="table table-striped mt-2">
+                <thead>
+                    <tr>
+                        <th>Robot ID</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var robot in robots)
+                    {
+                        <tr>
+                            <td>@robot.Robot_ID</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteRobot(robot.Robot_ID)">Xóa</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Di Chuyển Pallet -->
+<div class="modal fade" id="moveModal" tabindex="-1" aria-labelledby="moveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moveModalLabel">Di Chuyển Pallet</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" @bind="selectedPalletId" />
+                <div class="mb-3">
+                    <label for="locationSelect" class="form-label">Chọn Vị Trí Mới</label>
+                    <select id="locationSelect" class="form-control" @bind="selectedLocationId">
+                        @foreach (var location in locations.Where(l => !palletLocations.Any(pl => pl.Location_ID == l.Location_ID && pl.Time_Out == null)))
+                        {
+                            <option value="@location.Location_ID">@location.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" @onclick="ConfirmMoveWithConfirmation">Xác Nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Pallet -->
+<div class="modal fade" id="addPalletModal" tabindex="-1" aria-labelledby="addPalletModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPalletModalLabel">Thêm Pallet Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Pallet ID</label>
+                    <input class="form-control" @bind="newPallet.Pallet_ID" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Trạng Thái</label>
+                    <input class="form-control" @bind="newPallet.Status" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Loại</label>
+                    <input class="form-control" @bind="newPallet.Type" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Kích Thước</label>
+                    <input class="form-control" @bind="newPallet.Size" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Vị Trí Ban Đầu</label>
+                    <select class="form-control" @bind="newPalletLocationId">
+                        @foreach (var location in locations.Where(l => !palletLocations.Any(pl => pl.Location_ID == l.Location_ID && pl.Time_Out == null)))
+                        {
+                            <option value="@location.Location_ID">@location.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Robot Assigned</label>
+                    <select class="form-control" @bind="selectedRobotId">
+                        <option value="">Chọn Robot</option>
+                        @foreach (var robot in robots)
+                        {
+                            <option value="@robot.Robot_ID">@robot.Robot_ID</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" @onclick="AddPallet">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Location -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLocationModalLabel">Thêm Vị Trí Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Location ID</label>
+                    <input class="form-control" @bind="newLocation.Location_ID" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tên</label>
+                    <input class="form-control" @bind="newLocation.Name" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Vị Trí Cha</label>
+                    <select class="form-control" @bind="newLocation.Parent_Location_ID">
+                        <option value="">Không có</option>
+                        @foreach (var location in locations)
+                        {
+                            <option value="@location.Location_ID">@location.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" @onclick="AddLocation">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Pallet_Location -->
+<div class="modal fade" id="addPalletLocationModal" tabindex="-1" aria-labelledby="addPalletLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPalletLocationModalLabel">Thêm Pallet_Location Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Pallet ID</label>
+                    <select class="form-control" @bind="newPalletLocation.Pallet_ID">
+                        @foreach (var pallet in pallets)
+                        {
+                            <option value="@pallet.Pallet_ID">@pallet.Pallet_ID</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Time In</label>
+                    <input class="form-control" type="datetime-local" @bind="newPalletLocation.Time_In" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Location ID</label>
+                    <select class="form-control" @bind="newPalletLocation.Location_ID">
+                        @foreach (var location in locations)
+                        {
+                            <option value="@location.Location_ID">@location.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Time Out</label>
+                    <input class="form-control" type="datetime-local" @bind="newPalletLocation.Time_Out" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" @onclick="AddPalletLocation">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Robot -->
+<div class="modal fade" id="addRobotModal" tabindex="-1" aria-labelledby="addRobotModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRobotModalLabel">Thêm Robot Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Robot ID</label>
+                    <input class="form-control" @bind="newRobotId" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" @onclick="AddRobot">Thêm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<PalletViewModel> pallets = new();
+    private List<Location> locations = new();
+    private List<Pallet_Location> palletLocations = new();
+    private List<Robot> robots = new();
+    private string selectedPalletId;
+    private string selectedLocationId;
+    private string selectedRobotId;
+    private string editPalletId;
+    private Pallet editPallet = new();
+    private Pallet newPallet = new();
+    private string newPalletLocationId;
+    private string editLocationId;
+    private Location editLocation = new();
+    private Location newLocation = new();
+    private (string Pallet_ID, DateTime Time_In)? editPalletLocationKey;
+    private Pallet_Location editPalletLocation = new();
+    private Pallet_Location newPalletLocation = new();
+    private string newRobotId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pallets = await WarehouseService.GetPalletsAsync();
+        locations = await WarehouseService.GetLocationsAsync();
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+        robots = await WarehouseService.GetRobotsAsync();
+    }
+    private async Task ConfirmMoveWithConfirmation()
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn di chuyển pallet này?");
+        if (confirmed)
+        {
+            await ConfirmMove();
+        }
+    }
+
+    private async Task ConfirmMove()
+    {
+        if (string.IsNullOrEmpty(selectedLocationId))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vui lòng chọn vị trí mới.");
+            return;
+        }
+        await WarehouseService.MovePalletAsync(selectedPalletId, selectedLocationId);
+        await JSRuntime.InvokeVoidAsync("hideModal", "moveModal");
+        pallets = await WarehouseService.GetPalletsAsync();
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+    }
+    // Pallet Methods
+    private async Task OpenMoveModal(string palletId)
+    {
+        selectedPalletId = palletId;
+        selectedLocationId = locations.FirstOrDefault(l => !palletLocations.Any(pl => pl.Location_ID == l.Location_ID && pl.Time_Out == null))?.Location_ID;
+        if (string.IsNullOrEmpty(selectedLocationId))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Không có vị trí trống nào để di chuyển.");
+            return;
+        }
+        await JSRuntime.InvokeVoidAsync("showModal", "moveModal");
+    }
+
+
+    private async Task StartPalletEdit(string palletId)
+    {
+        editPalletId = palletId;
+        editPallet = await WarehouseService.GetPalletByIdAsync(palletId);
+    }
+
+    private async Task SavePalletEdit(string palletId)
+    {
+        if (string.IsNullOrWhiteSpace(editPallet.Status))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Trạng thái không được để trống.");
+            return;
+        }
+        await WarehouseService.UpdatePalletAsync(editPallet);
+        editPalletId = null;
+        pallets = await WarehouseService.GetPalletsAsync();
+    }
+
+    private void CancelPalletEdit()
+    {
+        editPalletId = null;
+        editPallet = new();
+    }
+
+    private async Task DeletePallet(string palletId)
+    {
+        await WarehouseService.DeletePalletAsync(palletId);
+        pallets = await WarehouseService.GetPalletsAsync();
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+    }
+
+    private async Task OpenAddPalletModal()
+    {
+        newPallet = new Pallet { Creation_Date = DateTime.Now };
+        newPalletLocationId = locations.FirstOrDefault(l => !palletLocations.Any(pl => pl.Location_ID == l.Location_ID && pl.Time_Out == null))?.Location_ID;
+        selectedRobotId = robots.FirstOrDefault()?.Robot_ID;
+        if (string.IsNullOrEmpty(newPalletLocationId))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Không có vị trí trống nào để thêm pallet.");
+            return;
+        }
+        await JSRuntime.InvokeVoidAsync("showModal", "addPalletModal");
+    }
+
+    private async Task AddPallet()
+    {
+        if (string.IsNullOrWhiteSpace(newPallet.Pallet_ID) ||
+            string.IsNullOrWhiteSpace(newPallet.Status) ||
+            string.IsNullOrWhiteSpace(newPallet.Type) ||
+            string.IsNullOrWhiteSpace(newPallet.Size) ||
+            string.IsNullOrEmpty(newPalletLocationId))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vui lòng điền đầy đủ thông tin cho Pallet.");
+            return;
+        }
+        if (pallets.Any(p => p.Pallet_ID.Equals(newPallet.Pallet_ID, StringComparison.OrdinalIgnoreCase)))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Pallet ID đã tồn tại, vui lòng nhập lại.");
+            return;
+        }
+        var selectedRobot = robots.FirstOrDefault(r => r.Robot_ID == selectedRobotId);
+        newPallet.Robot_ID = selectedRobot?.Robot_ID;
+        await WarehouseService.AddPalletAsync(newPallet, newPalletLocationId, selectedRobot);
+        await JSRuntime.InvokeVoidAsync("hideModal", "addPalletModal");
+        pallets = await WarehouseService.GetPalletsAsync();
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+    }
+
+    // Location Methods
+    private async Task StartLocationEdit(string locationId)
+    {
+        editLocationId = locationId;
+        editLocation = await WarehouseService.GetLocationByIdAsync(locationId);
+    }
+
+    private async Task SaveLocationEdit(string locationId)
+    {
+        if (string.IsNullOrWhiteSpace(editLocation.Name))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Tên vị trí không được để trống.");
+            return;
+        }
+        if (editLocation.Parent_Location_ID == editLocation.Location_ID)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vị trí cha không thể là chính nó.");
+            return;
+        }
+        await WarehouseService.UpdateLocationAsync(editLocation);
+        editLocationId = null;
+        locations = await WarehouseService.GetLocationsAsync();
+    }
+
+    private void CancelLocationEdit()
+    {
+        editLocationId = null;
+        editLocation = new();
+    }
+
+    private async Task DeleteLocation(string locationId)
+    {
+        try
+        {
+            await WarehouseService.DeleteLocationAsync(locationId);
+            locations = await WarehouseService.GetLocationsAsync();
+            palletLocations = await WarehouseService.GetPalletLocationsAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+    }
+
+    private async Task OpenAddLocationModal()
+    {
+        newLocation = new Location();
+        await JSRuntime.InvokeVoidAsync("showModal", "addLocationModal");
+    }
+
+    private async Task AddLocation()
+    {
+        if (string.IsNullOrWhiteSpace(newLocation.Location_ID) ||
+            string.IsNullOrWhiteSpace(newLocation.Name))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vui lòng điền đầy đủ thông tin cho Vị Trí.");
+            return;
+        }
+        if (locations.Any(l => l.Location_ID.Equals(newLocation.Location_ID, StringComparison.OrdinalIgnoreCase)))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Location ID đã tồn tại, vui lòng nhập lại.");
+            return;
+        }
+        if (!string.IsNullOrEmpty(newLocation.Parent_Location_ID) && newLocation.Parent_Location_ID == newLocation.Location_ID)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vị trí cha không thể là chính nó.");
+            return;
+        }
+        await WarehouseService.AddLocationAsync(newLocation);
+        await JSRuntime.InvokeVoidAsync("hideModal", "addLocationModal");
+        locations = await WarehouseService.GetLocationsAsync();
+    }
+
+    // Pallet_Location Methods
+    private async Task StartPalletLocationEdit(string palletId, DateTime timeIn)
+    {
+        editPalletLocationKey = (palletId, timeIn);
+        editPalletLocation = await WarehouseService.GetPalletLocationByIdAsync(palletId, timeIn);
+    }
+
+    private async Task SavePalletLocationEdit()
+    {
+        if (string.IsNullOrWhiteSpace(editPalletLocation.Location_ID))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vui lòng chọn Vị Trí.");
+            return;
+        }
+        await WarehouseService.UpdatePalletLocationAsync(editPalletLocation);
+        editPalletLocationKey = null;
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+    }
+
+    private void CancelPalletLocationEdit()
+    {
+        editPalletLocationKey = null;
+        editPalletLocation = new();
+    }
+
+    private async Task DeletePalletLocation(string palletId, DateTime timeIn)
+    {
+        await WarehouseService.DeletePalletLocationAsync(palletId, timeIn);
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+        pallets = await WarehouseService.GetPalletsAsync();
+    }
+
+    private async Task OpenAddPalletLocationModal()
+    {
+        newPalletLocation = new Pallet_Location { Time_In = DateTime.Now };
+        if (!pallets.Any() || !locations.Any())
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Cần có ít nhất một pallet và một vị trí để thêm Pallet_Location.");
+            return;
+        }
+        newPalletLocation.Pallet_ID = pallets.First().Pallet_ID;
+        newPalletLocation.Location_ID = locations.First().Location_ID;
+        await JSRuntime.InvokeVoidAsync("showModal", "addPalletLocationModal");
+    }
+
+    private async Task AddPalletLocation()
+    {
+        if (string.IsNullOrWhiteSpace(newPalletLocation.Pallet_ID) ||
+            string.IsNullOrWhiteSpace(newPalletLocation.Location_ID))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vui lòng chọn Pallet và Vị Trí.");
+            return;
+        }
+        if (palletLocations.Any(pl => pl.Pallet_ID == newPalletLocation.Pallet_ID && pl.Time_In == newPalletLocation.Time_In))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Bản ghi Pallet_Location đã tồn tại, vui lòng kiểm tra lại Time In.");
+            return;
+        }
+        await WarehouseService.AddPalletLocationAsync(newPalletLocation);
+        await JSRuntime.InvokeVoidAsync("hideModal", "addPalletLocationModal");
+        palletLocations = await WarehouseService.GetPalletLocationsAsync();
+        pallets = await WarehouseService.GetPalletsAsync();
+    }
+
+    // Robot Methods
+    private async Task OpenAddRobotModal()
+    {
+        newRobotId = string.Empty;
+        await JSRuntime.InvokeVoidAsync("showModal", "addRobotModal");
+    }
+
+    private async Task AddRobot()
+    {
+        if (string.IsNullOrWhiteSpace(newRobotId))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Vui lòng nhập Robot ID.");
+            return;
+        }
+        if (robots.Any(r => r.Robot_ID.Equals(newRobotId, StringComparison.OrdinalIgnoreCase)))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Robot ID đã tồn tại, vui lòng nhập lại.");
+            return;
+        }
+        var newRobot = new Robot { Robot_ID = newRobotId };
+        await WarehouseService.AddRobotAsync(newRobot);
+        await JSRuntime.InvokeVoidAsync("hideModal", "addRobotModal");
+        robots = await WarehouseService.GetRobotsAsync();
+    }
+
+    private async Task DeleteRobot(string robotId)
+    {
+        try
+        {
+            await WarehouseService.DeleteRobotAsync(robotId);
+            robots = await WarehouseService.GetRobotsAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+    }
+}
