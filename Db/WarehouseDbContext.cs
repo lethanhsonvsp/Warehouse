@@ -3,17 +3,13 @@ using Warehouse.Model;
 
 namespace Warehouse.Db
 {
-    public class WarehouseDbContext : DbContext
+    public class WarehouseDbContext(DbContextOptions<WarehouseDbContext> options) : DbContext(options)
     {
         public DbSet<Location> Locations { get; set; }
         public DbSet<Pallet> Pallets { get; set; }
         public DbSet<Pallet_Location> Pallet_Locations { get; set; }
         public DbSet<Robot> Robots { get; set; }
 
-        public WarehouseDbContext(DbContextOptions<WarehouseDbContext> options)
-            : base(options)
-        {
-        }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Configure Pallet_Location entity
@@ -31,8 +27,8 @@ namespace Warehouse.Db
                       .HasColumnType("datetime2");
 
                 entity.Property(pl => pl.Location_ID)
-                      .HasMaxLength(10)
-                      .HasColumnType("nvarchar(10)");
+                      .HasMaxLength(50) // Tăng độ dài để phù hợp với Location_ID mới
+                      .HasColumnType("nvarchar(50)");
 
                 entity.Property(pl => pl.Time_Out)
                       .HasColumnType("datetime2");
@@ -86,9 +82,9 @@ namespace Warehouse.Db
                 entity.HasKey(l => l.Location_ID);
 
                 entity.Property(l => l.Location_ID)
-                      .HasMaxLength(10)
+                      .HasMaxLength(50) // Tăng độ dài lên 50
                       .IsRequired()
-                      .HasColumnType("nvarchar(10)");
+                      .HasColumnType("nvarchar(50)");
 
                 entity.Property(l => l.Name)
                       .HasMaxLength(100)
@@ -96,8 +92,8 @@ namespace Warehouse.Db
                       .HasColumnType("nvarchar(100)");
 
                 entity.Property(l => l.Parent_Location_ID)
-                      .HasMaxLength(10)
-                      .HasColumnType("nvarchar(10)");
+                      .HasMaxLength(50) // Tăng độ dài lên 50
+                      .HasColumnType("nvarchar(50)");
 
                 entity.HasOne(l => l.Parent_Location)
                       .WithMany(l => l.Child_Locations)

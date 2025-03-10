@@ -15,9 +15,9 @@ namespace Warehouse.Migrations
                 name: "Locations",
                 columns: table => new
                 {
-                    Location_ID = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    Location_ID = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Parent_Location_ID = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true)
+                    Parent_Location_ID = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -50,8 +50,7 @@ namespace Warehouse.Migrations
                     Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Size = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Creation_Date = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Robot_ID = table.Column<string>(type: "nvarchar(10)", nullable: false),
-                    Robot_ID1 = table.Column<string>(type: "nvarchar(10)", nullable: true)
+                    Robot_ID = table.Column<string>(type: "nvarchar(10)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -61,12 +60,7 @@ namespace Warehouse.Migrations
                         column: x => x.Robot_ID,
                         principalTable: "Robots",
                         principalColumn: "Robot_ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Pallets_Robots_Robot_ID1",
-                        column: x => x.Robot_ID1,
-                        principalTable: "Robots",
-                        principalColumn: "Robot_ID");
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -75,7 +69,7 @@ namespace Warehouse.Migrations
                 {
                     Pallet_ID = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     Time_In = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Location_ID = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    Location_ID = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Time_Out = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
@@ -109,11 +103,6 @@ namespace Warehouse.Migrations
                 name: "IX_Pallets_Robot_ID",
                 table: "Pallets",
                 column: "Robot_ID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Pallets_Robot_ID1",
-                table: "Pallets",
-                column: "Robot_ID1");
         }
 
         /// <inheritdoc />

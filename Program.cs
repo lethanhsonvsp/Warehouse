@@ -3,7 +3,7 @@ using Warehouse.Components;
 using Warehouse.Controller;
 using Warehouse.Db;
 using Warehouse.Service;
-
+using MudBlazor.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddDbContext<WarehouseDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddMudServices();
 builder.Services.AddScoped<WarehouseService>();
 
 builder.Services.AddSingleton<RobotController>();

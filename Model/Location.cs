@@ -6,14 +6,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 public class Location
 {
     [Key]
-    [StringLength(10)]
-    public string Location_ID { get; set; }
+    [StringLength(50)] // Tăng độ dài lên 50 để chứa "Z1/R01/L01/B01" (dài tối đa khoảng 20-30 ký tự)
+    public string? Location_ID { get; set; }
 
     [Required]
     [StringLength(100)]
     public string? Name { get; set; }
 
-    [StringLength(10)]
+    [StringLength(50)] // Tăng độ dài tương ứng với Location_ID
     public string? Parent_Location_ID { get; set; }
 
     // Navigation properties

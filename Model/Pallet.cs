@@ -1,15 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Warehouse.Model;
+namespace Warehouse.Model;
 
 public class Pallet
 {
     [Key]
     [StringLength(10)]
-    public string Pallet_ID { get; set; }
+    public string? Pallet_ID { get; set; }
 
     [Required]
     [StringLength(20)]
-    public string Status { get; set; }
+    public string? Status { get; set; }
 
     [StringLength(50)]
     public string? Type { get; set; }
@@ -19,8 +19,9 @@ public class Pallet
 
     public DateTime? Creation_Date { get; set; }
 
-    public string Robot_ID { get; set; } // Khóa ngoại (foreign key)
-    public Robot Robot { get; set; } // Navigation property
+    public string? Robot_ID { get; set; } // Khóa ngoại (foreign key)
+    public Robot? Robot { get; set; } // Navigation property
 
-    public ICollection<Pallet_Location> Pallet_Locations { get; set; } = new List<Pallet_Location>();
+    public ICollection<Pallet_Location> Pallet_Locations { get; set; } = [];
 }
+

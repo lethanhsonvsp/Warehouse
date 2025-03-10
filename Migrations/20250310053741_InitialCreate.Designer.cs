@@ -12,7 +12,7 @@ using Warehouse.Db;
 namespace Warehouse.Migrations
 {
     [DbContext(typeof(WarehouseDbContext))]
-    [Migration("20250308091202_InitialCreate")]
+    [Migration("20250310053741_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -38,9 +38,6 @@ namespace Warehouse.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("Robot_ID1")
-                        .HasColumnType("nvarchar(10)");
-
                     b.Property<string>("Size")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -58,16 +55,14 @@ namespace Warehouse.Migrations
 
                     b.HasIndex("Robot_ID");
 
-                    b.HasIndex("Robot_ID1");
-
                     b.ToTable("Pallets");
                 });
 
             modelBuilder.Entity("Warehouse.Model.Location", b =>
                 {
                     b.Property<string>("Location_ID")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -75,8 +70,8 @@ namespace Warehouse.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Parent_Location_ID")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Location_ID");
 
@@ -98,8 +93,8 @@ namespace Warehouse.Migrations
 
                     b.Property<string>("Location_ID")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("Time_Out")
                         .HasColumnType("datetime2");
@@ -125,14 +120,10 @@ namespace Warehouse.Migrations
             modelBuilder.Entity("Pallet", b =>
                 {
                     b.HasOne("Warehouse.Model.Robot", "Robot")
-                        .WithMany()
-                        .HasForeignKey("Robot_ID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Warehouse.Model.Robot", null)
                         .WithMany("Pallets")
-                        .HasForeignKey("Robot_ID1");
+                        .HasForeignKey("Robot_ID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Robot");
                 });

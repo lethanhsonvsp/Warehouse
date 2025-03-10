@@ -6,16 +6,10 @@ using Warehouse.Model;
 
 namespace Warehouse.Service;
 
-public class WarehouseService
+public class WarehouseService(WarehouseDbContext dbContext, RobotController robotController)
 {
-    private readonly WarehouseDbContext _dbContext;
-    private readonly RobotController _robotController;
-
-    public WarehouseService(WarehouseDbContext dbContext, RobotController robotController)
-    {
-        _dbContext = dbContext;
-        _robotController = robotController;
-    }
+    private readonly WarehouseDbContext _dbContext = dbContext;
+    private readonly RobotController _robotController = robotController;
 
     // Phương thức Pallet
     public async Task<List<PalletViewModel>> GetPalletsAsync()
@@ -27,7 +21,7 @@ public class WarehouseService
                 Status = p.Status,
                 Current_Location = p.Pallet_Locations
                     .Where(pl => pl.Time_Out == null)
-                    .Select(pl => pl.Location.Name)
+                    .Select(pl => pl.Location!.Name)
                     .FirstOrDefault(),
                 Robot_ID = p.Robot_ID // Corrected to string
             })
@@ -54,7 +48,6 @@ public class WarehouseService
         await _dbContext.SaveChangesAsync();
     }
 
-
     public async Task MovePalletAsync(string palletId, string newLocationId)
     {
         var pallet = await _dbContext.Pallets
@@ -66,7 +59,7 @@ public class WarehouseService
 
         var robot = pallet.Robot;
         var currentLocationId = await GetCurrentLocationAsync(palletId);
-        var message = BuildVDA5050MoveMessage(pallet.Robot.Robot_ID, palletId, currentLocationId, newLocationId);
+        var message = BuildVDA5050MoveMessage(pallet.Robot!.Robot_ID!, palletId, currentLocationId, newLocationId);
         await SendVDA5050MessageAsync(pallet.Robot, message);
 
         var currentRecord = await _dbContext.Pallet_Locations
@@ -86,10 +79,7 @@ public class WarehouseService
 
     public async Task UpdatePalletAsync(Pallet pallet)
     {
-        var existingPallet = await _dbContext.Pallets.FindAsync(pallet.Pallet_ID);
-        if (existingPallet == null)
-            throw new Exception("Không tìm thấy pallet để cập nhật.");
-
+        var existingPallet = await _dbContext.Pallets.FindAsync(pallet.Pallet_ID) ?? throw new Exception("Không tìm thấy pallet để cập nhật.");
         existingPallet.Status = pallet.Status;
         existingPallet.Type = pallet.Type;
         existingPallet.Size = pallet.Size;
@@ -103,11 +93,7 @@ public class WarehouseService
     {
         var pallet = await _dbContext.Pallets
             .Include(p => p.Pallet_Locations)
-            .FirstOrDefaultAsync(p => p.Pallet_ID == palletId);
-
-        if (pallet == null)
-            throw new Exception("Không tìm thấy pallet để xóa.");
-
+            .FirstOrDefaultAsync(p => p.Pallet_ID == palletId) ?? throw new Exception("Không tìm thấy pallet để xóa.");
         _dbContext.Pallet_Locations.RemoveRange(pallet.Pallet_Locations);
         _dbContext.Pallets.Remove(pallet);
 
@@ -131,6 +117,27 @@ public class WarehouseService
     }
 
     // Phương thức Location
+    public async Task<List<Location>> GetLocationsAsync(int page = 1, int pageSize = 10)
+    {
+        return await _dbContext.Locations
+            .Select(l => new Location
+            {
+                Location_ID = l.Location_ID,
+                Name = l.Name,
+                Parent_Location_ID = l.Parent_Location_ID,
+                Parent_Location = l.Parent_Location != null ? new Location { Name = l.Parent_Location.Name } : null
+            })
+            .OrderBy(l => l.Location_ID) // Add ordering for consistency
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    // New method to get total count
+    public async Task<int> GetLocationCountAsync()
+    {
+        return await _dbContext.Locations.CountAsync();
+    }
     public async Task<List<Location>> GetLocationsAsync()
     {
         return await _dbContext.Locations.ToListAsync();
@@ -144,10 +151,7 @@ public class WarehouseService
 
     public async Task UpdateLocationAsync(Location location)
     {
-        var existingLocation = await _dbContext.Locations.FindAsync(location.Location_ID);
-        if (existingLocation == null)
-            throw new Exception("Không tìm thấy vị trí để cập nhật.");
-
+        var existingLocation = await _dbContext.Locations.FindAsync(location.Location_ID) ?? throw new Exception("Không tìm thấy vị trí để cập nhật.");
         existingLocation.Name = location.Name;
         existingLocation.Parent_Location_ID = location.Parent_Location_ID;
 
@@ -159,12 +163,8 @@ public class WarehouseService
         var location = await _dbContext.Locations
             .Include(l => l.Pallet_Locations)
             .Include(l => l.Child_Locations)
-            .FirstOrDefaultAsync(l => l.Location_ID == locationId);
-
-        if (location == null)
-            throw new Exception("Không tìm thấy vị trí để xóa.");
-
-        if (location.Pallet_Locations.Any() || location.Child_Locations.Any())
+            .FirstOrDefaultAsync(l => l.Location_ID == locationId) ?? throw new Exception("Không tìm thấy vị trí để xóa.");
+        if (location.Pallet_Locations.Count != 0 || location.Child_Locations.Count != 0)
             throw new Exception("Không thể xóa vị trí đang được sử dụng.");
 
         _dbContext.Locations.Remove(location);
@@ -195,10 +195,7 @@ public class WarehouseService
     public async Task UpdatePalletLocationAsync(Pallet_Location palletLocation)
     {
         var existing = await _dbContext.Pallet_Locations
-            .FirstOrDefaultAsync(pl => pl.Pallet_ID == palletLocation.Pallet_ID && pl.Time_In == palletLocation.Time_In);
-        if (existing == null)
-            throw new Exception("Không tìm thấy bản ghi Pallet_Location để cập nhật.");
-
+            .FirstOrDefaultAsync(pl => pl.Pallet_ID == palletLocation.Pallet_ID && pl.Time_In == palletLocation.Time_In) ?? throw new Exception("Không tìm thấy bản ghi Pallet_Location để cập nhật.");
         existing.Location_ID = palletLocation.Location_ID;
         existing.Time_Out = palletLocation.Time_Out;
 
@@ -208,10 +205,7 @@ public class WarehouseService
     public async Task DeletePalletLocationAsync(string palletId, DateTime timeIn)
     {
         var palletLocation = await _dbContext.Pallet_Locations
-            .FirstOrDefaultAsync(pl => pl.Pallet_ID == palletId && pl.Time_In == timeIn);
-        if (palletLocation == null)
-            throw new Exception("Không tìm thấy bản ghi Pallet_Location để xóa.");
-
+            .FirstOrDefaultAsync(pl => pl.Pallet_ID == palletId && pl.Time_In == timeIn) ?? throw new Exception("Không tìm thấy bản ghi Pallet_Location để xóa.");
         _dbContext.Pallet_Locations.Remove(palletLocation);
         await _dbContext.SaveChangesAsync();
     }
@@ -311,7 +305,7 @@ public class WarehouseService
                         sequenceId = 0,
                         startNodeId = pickupLocationId,
                         endNodeId = dropoffLocationId,
-                        actions = new object[] { }
+                        actions = Array.Empty<object>()
                     }
                 }
             }
@@ -322,8 +316,8 @@ public class WarehouseService
 
 public class PalletViewModel
 {
-    public string Pallet_ID { get; set; }
-    public string Status { get; set; }
-    public string Current_Location { get; set; }
-    public string Robot_ID { get; set; } // Chỉ lưu ID thay vì toàn bộ Robot
+    public string? Pallet_ID { get; set; }
+    public string? Status { get; set; }
+    public string? Current_Location { get; set; }
+    public string? Robot_ID { get; set; } // Chỉ lưu ID thay vì toàn bộ Robot
 }
