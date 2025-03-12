@@ -28,7 +28,7 @@ public class WarehouseService(WarehouseDbContext dbContext, RobotController robo
             .ToListAsync();
     }
 
-    public async Task AddPalletAsync(Pallet pallet, string initialLocationId, Robot robotId)
+    public async Task AddPalletAsync (Pallet pallet, string initialLocationId, Robot robotId)
     {
         if (string.IsNullOrEmpty(initialLocationId))
             throw new ArgumentException("Vị trí ban đầu không được để trống.");
@@ -60,7 +60,7 @@ public class WarehouseService(WarehouseDbContext dbContext, RobotController robo
         var robot = pallet.Robot;
         var currentLocationId = await GetCurrentLocationAsync(palletId);
         var message = BuildVDA5050MoveMessage(pallet.Robot!.Robot_ID!, palletId, currentLocationId, newLocationId);
-        await SendVDA5050MessageAsync(pallet.Robot, message);
+        await SendVDA5050MessageAsync(message);
 
         var currentRecord = await _dbContext.Pallet_Locations
             .FirstAsync(pl => pl.Pallet_ID == palletId && pl.Time_Out == null);
@@ -240,9 +240,9 @@ public class WarehouseService(WarehouseDbContext dbContext, RobotController robo
     }
 
     // Phương thức VDA5050
-    public async Task SendVDA5050MessageAsync(Robot robotId, string message)
+    public async Task SendVDA5050MessageAsync(string message)
     {
-        await _robotController.SendMessageAsync(robotId, message);
+        await _robotController.SendMessageAsync(message);
     }
 
     private static string BuildVDA5050MoveMessage(string robotId, string palletId, string pickupLocationId, string dropoffLocationId)
