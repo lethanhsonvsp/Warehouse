@@ -50,7 +50,7 @@ namespace Warehouse.Migrations
                     Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Size = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Creation_Date = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Robot_ID = table.Column<string>(type: "nvarchar(10)", nullable: false)
+                    Robot_ID = table.Column<string>(type: "nvarchar(10)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -69,7 +69,7 @@ namespace Warehouse.Migrations
                 {
                     Pallet_ID = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     Time_In = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Location_ID = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Location_ID = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Time_Out = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>

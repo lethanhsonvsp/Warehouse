@@ -4,17 +4,23 @@ using Warehouse.Controller;
 using Warehouse.Db;
 using Warehouse.Service;
 using MudBlazor.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.DataProtection;
+using System.Security.Cryptography.X509Certificates;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+var configuration = builder.Configuration;
 builder.Services.AddDbContext<WarehouseDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddMudServices();
 builder.Services.AddScoped<WarehouseService>();
 
 builder.Services.AddSingleton<RobotController>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

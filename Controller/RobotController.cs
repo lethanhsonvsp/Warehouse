@@ -127,13 +127,15 @@ namespace Warehouse.Controller
         }
 
         // Hàm Main để chạy thử
-        public static async Task Main(string[] args)
-        {
-            var controller = new RobotController();
-            await controller.SendMessageAsync("Test message from RobotController");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-            await controller.DisconnectAsync();
-        }
+        //public static async Task Main(string[] args)
+        //{
+        //    ArgumentNullException.ThrowIfNull(args);
+
+        //    var controller = new RobotController();
+        //    await controller.SendMessageAsync("Test message from RobotController");
+        //    Console.WriteLine("Press any key to exit...");
+        //    Console.ReadKey();
+        //    await controller.DisconnectAsync();
+        //}
     }
 }

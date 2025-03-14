@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Warehouse.Db;
@@ -12,51 +11,14 @@ using Warehouse.Db;
 namespace Warehouse.Migrations
 {
     [DbContext(typeof(WarehouseDbContext))]
-    [Migration("20250310053741_InitialCreate")]
+    [Migration("20250314014446_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Pallet", b =>
-                {
-                    b.Property<string>("Pallet_ID")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<DateTime?>("Creation_Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Robot_ID")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("Size")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Type")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Pallet_ID");
-
-                    b.HasIndex("Robot_ID");
-
-                    b.ToTable("Pallets");
-                });
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.3");
 
             modelBuilder.Entity("Warehouse.Model.Location", b =>
                 {
@@ -80,6 +42,38 @@ namespace Warehouse.Migrations
                     b.ToTable("Locations");
                 });
 
+            modelBuilder.Entity("Warehouse.Model.Pallet", b =>
+                {
+                    b.Property<string>("Pallet_ID")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("Creation_Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Robot_ID")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Size")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Pallet_ID");
+
+                    b.HasIndex("Robot_ID");
+
+                    b.ToTable("Pallets");
+                });
+
             modelBuilder.Entity("Warehouse.Model.Pallet_Location", b =>
                 {
                     b.Property<string>("Pallet_ID")
@@ -92,7 +86,6 @@ namespace Warehouse.Migrations
                         .HasColumnOrder(1);
 
                     b.Property<string>("Location_ID")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -117,17 +110,6 @@ namespace Warehouse.Migrations
                     b.ToTable("Robots");
                 });
 
-            modelBuilder.Entity("Pallet", b =>
-                {
-                    b.HasOne("Warehouse.Model.Robot", "Robot")
-                        .WithMany("Pallets")
-                        .HasForeignKey("Robot_ID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Robot");
-                });
-
             modelBuilder.Entity("Warehouse.Model.Location", b =>
                 {
                     b.HasOne("Warehouse.Model.Location", "Parent_Location")
@@ -138,15 +120,24 @@ namespace Warehouse.Migrations
                     b.Navigation("Parent_Location");
                 });
 
+            modelBuilder.Entity("Warehouse.Model.Pallet", b =>
+                {
+                    b.HasOne("Warehouse.Model.Robot", "Robot")
+                        .WithMany("Pallets")
+                        .HasForeignKey("Robot_ID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Robot");
+                });
+
             modelBuilder.Entity("Warehouse.Model.Pallet_Location", b =>
                 {
                     b.HasOne("Warehouse.Model.Location", "Location")
                         .WithMany("Pallet_Locations")
                         .HasForeignKey("Location_ID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Pallet", "Pallet")
+                    b.HasOne("Warehouse.Model.Pallet", "Pallet")
                         .WithMany("Pallet_Locations")
                         .HasForeignKey("Pallet_ID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -157,15 +148,15 @@ namespace Warehouse.Migrations
                     b.Navigation("Pallet");
                 });
 
-            modelBuilder.Entity("Pallet", b =>
-                {
-                    b.Navigation("Pallet_Locations");
-                });
-
             modelBuilder.Entity("Warehouse.Model.Location", b =>
                 {
                     b.Navigation("Child_Locations");
 
+                    b.Navigation("Pallet_Locations");
+                });
+
+            modelBuilder.Entity("Warehouse.Model.Pallet", b =>
+                {
                     b.Navigation("Pallet_Locations");
                 });
 
